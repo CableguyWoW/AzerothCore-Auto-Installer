@@ -121,34 +121,34 @@ generate_random_password()
 if [ "$RANDOMIZE_PASSWORDS" = "true" ]; then
     replace_randomizepass "/AzerothCore-Auto-Installer/configs/*"  # Example: replace in all .txt files
 else
-    echo "Password randomiztion disabled, the default password is password123"
+    echo "Password randomization disabled, the default password is password123"
     echo ""
-    if [ "$REMOTE_DB_SETUP" = "true" ]; then
-        echo "Its highly recommended to change the remote MYSQL user password as it will be public."
-        echo "YOU HAVE BEEN WARNED!"
-        echo ""
-        while true; do
-            read -p "Do you want to change the password? (y/n): " yn
-            if [[ "$yn" =~ ^[Yy]$ ]]; then
-                read -sp "Enter the new password: " NEW_PASSWORD
-                echo ""  # New line after password input
-                CONFIG_FILE="/AzerothCore-Auto-Installer/configs/root-config"  # Define the config file path
-                
-                if [[ -f "$CONFIG_FILE" ]]; then
-                    sed -i "s|REMOTE_DB_PASS=\"remotepass123\"|REMOTE_DB_PASS=\"$NEW_PASSWORD\"|" "$CONFIG_FILE" && echo "Password updated successfully in $CONFIG_FILE."
-                    remote_db_update="true"
-                else
-                    echo "Error: Configuration file does not exist."
-                fi
-                break  # Exit the loop after successful update
-            elif [[ "$yn" =~ ^[Nn]$ ]]; then
-                echo "Operation cancelled."
-                break  # Exit the loop if the operation is cancelled
+fi
+if [ "$REMOTE_DB_SETUP" = "true" ]; then
+    echo "Its highly recommended to change the remote MYSQL user password as it will be public."
+    echo "YOU HAVE BEEN WARNED!"
+    echo ""
+    while true; do
+        read -p "Do you want to change the password? (y/n): " yn
+        if [[ "$yn" =~ ^[Yy]$ ]]; then
+            read -sp "Enter the new password: " NEW_PASSWORD
+            echo ""  # New line after password input
+            CONFIG_FILE="/AzerothCore-Auto-Installer/configs/root-config"  # Define the config file path
+            
+            if [[ -f "$CONFIG_FILE" ]]; then
+                sed -i "s|REMOTE_DB_PASS=\"remotepass123\"|REMOTE_DB_PASS=\"$NEW_PASSWORD\"|" "$CONFIG_FILE" && echo "Password updated successfully in $CONFIG_FILE."
+                remote_db_update="true"
             else
-                echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+                echo "Error: Configuration file does not exist."
             fi
-        done
-    fi
+            break  # Exit the loop after successful update
+        elif [[ "$yn" =~ ^[Nn]$ ]]; then
+            echo "Operation cancelled."
+            break  # Exit the loop if the operation is cancelled
+        else
+            echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+        fi
+    done
 fi
 fi
 
