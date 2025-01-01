@@ -1,0 +1,428 @@
+#!/bin/bash
+
+### AzerothCore INSTALL SCRIPT
+### TESTED WITH UBUNTU ONLY
+
+. /AzerothCore-Auto-Installer/configs/root-config
+. /AzerothCore-Auto-Installer/configs/repo-config
+. /AzerothCore-Auto-Installer/configs/auth-config
+. /AzerothCore-Auto-Installer/configs/realm-dev-config
+
+if [ $USER != "$SETUP_REALM_USER" ]; then
+
+echo "You must run this script under the $SETUP_REALM_USER user!"
+
+else
+
+## LETS START
+echo ""
+echo "##########################################################"
+echo "## DEV REALM INSTALL SCRIPT STARTING...."
+echo "##########################################################"
+echo ""
+NUM=0
+export DEBIAN_FRONTEND=noninteractive
+
+if [ "$1" = "" ]; then
+echo ""
+echo "## No option selected, see list below"
+echo ""
+echo "- [all] : Run Full Script"
+echo ""
+echo "- [startrealm debug] : Start Realm screen under GDB"
+echo "- [startrealm release] : Start Realm screen under release"
+echo "- [stoprealm] : Stops all screen sessions on the user"
+echo ""
+((NUM++)); echo "- [$NUM] : Close Worldserver"
+((NUM++)); echo "- [$NUM] : Setup MySQL Database & Users"
+((NUM++)); echo "- [$NUM] : Pull and Setup Source"
+((NUM++)); echo "- [$NUM] : Setup Worldserver Config"
+((NUM++)); echo "- [$NUM] : Pull and Setup Database"
+((NUM++)); echo "- [$NUM] : Download 3.3.5a Client Data"
+((NUM++)); echo "- [$NUM] : Setup World Restarter Scripts"
+((NUM++)); echo "- [$NUM] : Setup Misc Scripts"
+((NUM++)); echo "- [$NUM] : Setup Crontab"
+((NUM++)); echo "- [$NUM] : Setup Script Alias"
+((NUM++)); echo "- [$NUM] : Setup Realmlist"
+((NUM++)); echo "- [$NUM] : Start Worldserver"
+echo ""
+
+else
+
+
+NUM=0
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Closing Worldserver"
+echo "##########################################################"
+echo ""
+killall screen
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Setup MySQL Database & Users"
+echo "##########################################################"
+echo ""
+
+# World Database Setup
+echo "Checking if the database '${REALM_DB_USER}_world' exists..."
+if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_world';" | grep -q "${REALM_DB_USER}_world"; then
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_world DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;"
+    if [[ $? -eq 0 ]]; then
+        echo "Database '${REALM_DB_USER}_world' created."
+    else
+        echo "Failed to create database '${REALM_DB_USER}_world'."
+        exit 1
+    fi
+else
+    echo "Database '${REALM_DB_USER}_world' already exists."
+fi
+
+echo "Checking if the database '${REALM_DB_USER}_character' exists..."
+if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_character';" | grep -q "${REALM_DB_USER}_character"; then
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_character DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;"
+    if [[ $? -eq 0 ]]; then
+        echo "Database '${REALM_DB_USER}_character' created."
+    else
+        echo "Failed to create database '${REALM_DB_USER}_character'."
+        exit 1
+    fi
+else
+    echo "Database '${REALM_DB_USER}_character' already exists."
+fi
+
+# Create the realm user if it does not already exist
+echo "Checking if the realm user '${REALM_DB_USER}' exists..."
+if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE User = '${REALM_DB_USER}' AND Host = 'localhost';" | grep -q "${REALM_DB_USER}"; then
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '${REALM_DB_USER}'@'localhost' IDENTIFIED BY '$REALM_DB_PASS';"
+    if [[ $? -eq 0 ]]; then
+        echo "Realm DB user '${REALM_DB_USER}' created."
+    else
+        echo "Failed to create realm DB user '${REALM_DB_USER}'."
+        exit 1
+    fi
+else
+    echo "Realm DB user '${REALM_DB_USER}' already exists."
+fi
+
+# Grant privileges
+echo "Granting privileges on '${REALM_DB_USER}_world' to '${REALM_DB_USER}'..."
+if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "GRANT ALL PRIVILEGES ON ${REALM_DB_USER}_world.* TO '${REALM_DB_USER}'@'localhost';"; then
+    echo "Granted all privileges on '${REALM_DB_USER}_world' to '${REALM_DB_USER}'."
+else
+    echo "Failed to grant privileges on '${REALM_DB_USER}_world' to '${REALM_DB_USER}'."
+    exit 1
+fi
+
+echo "Granting privileges on '${REALM_DB_USER}_character' to '${REALM_DB_USER}'..."
+if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "GRANT ALL PRIVILEGES ON ${REALM_DB_USER}_character.* TO '${REALM_DB_USER}'@'localhost';"; then
+    echo "Granted all privileges on '${REALM_DB_USER}_character' to '${REALM_DB_USER}'."
+else
+    echo "Failed to grant privileges on '${REALM_DB_USER}_character' to '${REALM_DB_USER}'."
+    exit 1
+fi
+
+# Flush privileges
+mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "FLUSH PRIVILEGES;"
+echo "Flushed privileges."
+echo "Setup World DB Account completed."
+
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Pulling AzerothCore Source"
+echo "##########################################################"
+echo ""
+cd /home/$SETUP_REALM_USER/
+mkdir /home/$SETUP_REALM_USER/server/
+mkdir /home/$SETUP_REALM_USER/server/logs/
+mkdir /home/$SETUP_REALM_USER/server/logs/crashes/
+mkdir /home/$SETUP_REALM_USER/server/data/
+## Source install
+if [ -d "cd /home/$SETUP_REALM_USER/azerothcore" ]; then
+    while true; do
+        read -p "$FOLDERNAME already exists. Redownload? (y/n): " file_choice
+        if [[ "$file_choice" =~ ^[Yy]$ ]]; then
+            rm -rf /home/$SETUP_REALM_USER/azerothcore
+            git clone --single-branch --branch $CORE_BRANCH "$CORE_REPO_URL" azerothcore
+            break
+        elif [[ "$file_choice" =~ ^[Nn]$ ]]; then
+            echo "Skipping download." && break
+        else
+            echo "Please answer y (yes) or n (no)."
+        fi
+    done
+else
+    git clone --single-branch --branch $CORE_BRANCH "$CORE_REPO_URL" azerothcore
+fi
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Building Source"
+echo "##########################################################"
+echo ""
+cd /home/$SETUP_REALM_USER/azerothcore/
+mkdir /home/$SETUP_REALM_USER/azerothcore/build
+cd /home/$SETUP_REALM_USER/azerothcore/build
+# Build flags for CMAKE
+if [ "$SETUP_TYPE" = "Normal" ]; then
+    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DTOOLS_BUILD=db-only -DSCRIPTS=dynamic -DMODULES=dynamic -DAPPS_BUILD=world-only
+elif [ "$SETUP_TYPE" = "GDB" ]; then
+    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DTOOLS_BUILD=db-only -DSCRIPTS=dynamic -DMODULES=dynamic -DAPPS_BUILD=world-only
+fi
+# Stop issues with overusing CPU on some hosts
+cpus=$(nproc)
+if [ "$cpus" -gt 1 ]; then
+  cpus=$((cpus - 1))
+fi
+make -j "$cpus" install
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Setup Config"
+echo "##########################################################"
+echo ""
+cd /home/$SETUP_REALM_USER/server/etc/
+mv worldserver.conf.dist worldserver.conf
+## Changing Config values
+echo "Changing Config values"
+## Misc Edits
+sed -i 's/RealmID = 1/RealmID = '${REALM_ID}'/g' worldserver.conf
+sed -i 's/WorldServerPort = 8085/WorldServerPort = '${SETUP_REALM_PORT}'/g' worldserver.conf
+sed -i 's/RealmZone = 1/RealmZone = '${REALM_ZONE}'/g' worldserver.conf
+sed -i 's/mmap.enablePathFinding = 0/mmap.enablePathFinding = 1/g' worldserver.conf
+## Folders
+sed -i 's^LogsDir = ""^LogsDir = "/home/'${SETUP_REALM_USER}'/server/logs"^g' worldserver.conf
+sed -i 's^DataDir = "."^DataDir = "/home/'${SETUP_REALM_USER}'/server/data"^g' worldserver.conf
+sed -i 's^BuildDirectory  = ""^BuildDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/build"^g' worldserver.conf
+sed -i 's^SourceDirectory  = ""^SourceDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/"^g' worldserver.conf
+## LoginDatabaseInfo
+sed -i "s/127.0.0.1;3306;acore;acore;acore_auth/${AUTH_DB_HOST};3306;${AUTH_DB_USER};${AUTH_DB_PASS};${AUTH_DB_USER};/g" worldserver.conf
+## WorldDatabaseInfo
+sed -i "s/127.0.0.1;3306;acore;acore;acore_world/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_world/g" worldserver.conf
+## CharacterDatabaseInfo
+sed -i "s/127.0.0.1;3306;acore;acore;acore_characters/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_character/g" worldserver.conf
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Download 3.3.5a Data"
+echo "##########################################################"
+echo ""
+cd /home/$SETUP_REALM_USER/
+if [ -f "/home/$SETUP_REALM_USER/server/data/data.zip" ]; then
+    while true; do
+        read -p "data.zip already exists. Redownload? (y/n): " file_choice
+        if [[ "$file_choice" =~ ^[Yy]$ ]]; then
+            sudo rm /home/$SETUP_REALM_USER/server/data/data.zip
+            mkdir -p /home/$SETUP_REALM_USER//server/data
+            cd /home/$SETUP_REALM_USER//server/data
+            wget $DATA_REPO_URL
+            7z x data.zip
+        elif [[ "$file_choice" =~ ^[Nn]$ ]]; then
+            echo "Skipping download." && break
+        else
+            echo "Please answer y (yes) or n (no)."
+        fi
+    done
+else
+    mkdir -p /home/$SETUP_REALM_USER//server/data 
+    cd /home/$SETUP_REALM_USER//server/data
+    wget $DATA_REPO_URL
+    7z x data.zip
+fi
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Setup Linux Restarter Scripts"
+echo "##########################################################"
+echo ""
+mkdir /home/$SETUP_REALM_USER/server/scripts/
+mkdir /home/$SETUP_REALM_USER/server/scripts/Restarter/
+mkdir /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
+sudo cp -r -u /AzerothCore-Auto-Installer/scripts/Restarter/World/* /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
+## FIX SCRIPTS PERMISSIONS
+sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
+sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/restarter_world_gdb.sh
+sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/gdbcommands
+sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
+sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/restarter_world.sh
+sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
+sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Setup Misc Scripts"
+echo "##########################################################"
+echo ""
+cp -r -u /AzerothCore-Auto-Installer/scripts/Setup/Clean-Logs.sh /home/$SETUP_REALM_USER/server/scripts/
+chmod +x  /home/$SETUP_REALM_USER/server/scripts/Clean-Logs.sh
+cd /home/$SETUP_REALM_USER/server/scripts/
+sudo sed -i "s^USER^${SETUP_REALM_USER}^g" Clean-Logs.sh
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Setup Crontab"
+echo "##########################################################"
+echo ""
+crontab -r
+if [ $SETUP_TYPE == "GDB" ]; then
+	echo "Setup Restarter in GDB mode...."
+	crontab -l | { cat; echo "############## START WORLD ##############"; } | crontab -
+	crontab -l | { cat; echo "#### GDB WORLD"; } | crontab -
+	crontab -l | { cat; echo "@reboot /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh"; } | crontab -
+	crontab -l | { cat; echo "#### NORMAL WORLD"; } | crontab -
+	crontab -l | { cat; echo "#@reboot /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh"; } | crontab -
+fi
+if [ $SETUP_TYPE == "Normal" ]; then
+	echo "Setup Restarter in Normal mode...."
+	crontab -l | { cat; echo "############## START WORLD ##############"; } | crontab -
+	crontab -l | { cat; echo "#### GDB WORLD"; } | crontab -
+	crontab -l | { cat; echo "#@reboot /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh"; } | crontab -
+	crontab -l | { cat; echo "#### NORMAL WORLD"; } | crontab -
+	crontab -l | { cat; echo "@reboot /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh"; } | crontab -
+fi
+## SETUP CRONTAB BACKUPS
+crontab -l | { cat; echo "############## MISC SCRIPTS ##############"; } | crontab -
+crontab -l | { cat; echo "* */1* * * * /home/$SETUP_REALM_USER/server/scripts/Clean-Logs.sh"; } | crontab -
+echo "$SETUP_REALM_USER Realm Crontab setup"
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM. Setup Script Alias"
+echo "##########################################################"
+echo ""
+
+HEADER="#### CUSTOM ALIAS"
+FOOTER="#### END CUSTOM ALIAS"
+
+# Remove content between the header and footer, including the markers
+sed -i "/$HEADER/,/$FOOTER/d" ~/.bashrc
+
+# Add header and footer if they are not present
+if ! grep -Fxq "$HEADER" ~/.bashrc; then
+    echo -e "\n$HEADER\n" >> ~/.bashrc
+    echo "header added"
+else
+    echo "header present"
+fi
+
+# Add new commands between the header and footer
+echo -e "\n## COMMANDS" >> ~/.bashrc
+echo "alias commands='cd /AzerothCore-Auto-Installer/scripts/Setup/ && ./Realm-Dev-Install.sh && cd -'" >> ~/.bashrc
+
+echo -e "\n## UPDATE" >> ~/.bashrc
+echo "alias update='cd /AzerothCore-Auto-Installer/scripts/Setup/ && ./Realm-Dev-Install.sh update && cd -'" >> ~/.bashrc
+
+echo -e "\n## REALMLIST" >> ~/.bashrc
+echo "alias updaterealmlist='cd /AzerothCore-Auto-Installer/scripts/Setup/ && ./Realm-Dev-Install.sh realmlist && cd -'" >> ~/.bashrc
+
+echo "Added script alias to bashrc"
+
+if ! grep -Fxq "$FOOTER" ~/.bashrc; then
+    echo -e "\n$FOOTER\n" >> ~/.bashrc
+    echo "footer added"
+fi
+
+# Source .bashrc to apply changes
+. ~/.bashrc
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "realmlist" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Update Realmlist"
+echo "##########################################################"
+echo ""
+if [ $SETUP_REALMLIST == "true" ]; then
+# Get the external IP address
+EXTERNAL_IP=$(curl -s http://ifconfig.me)
+mysql --host=$REALM_DB_HOST -h $AUTH_DB_HOST -u $AUTH_DB_USER -p$AUTH_DB_PASS << EOF
+use auth
+DELETE from realmlist where id = $REALM_ID;
+REPLACE INTO realmlist VALUES ('$REALM_ID', '$REALM_NAME', '$EXTERNAL_IP', '$EXTERNAL_IP', '255.255.255.0', '$SETUP_REALM_PORT', '0', '0', '$REALM_ZONE', '$REALM_SECURITY', '0', '12340');
+quit
+EOF
+fi
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM.Start Server"
+echo "##########################################################"
+echo ""
+if [ $SETUP_TYPE == "GDB" ]; then
+	echo "REALM STARTED IN GDB MODE!"
+	/home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
+fi
+if [ $SETUP_TYPE == "Normal" ]; then
+	echo "REALM STARTED IN NORMAL MODE!"
+	/home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
+fi
+fi
+
+echo ""
+echo "##########################################################"
+echo "## DEV REALM INSTALLED AND FINISHED!"
+echo "##########################################################"
+echo ""
+echo -e "\e[32m↓↓↓ To access the worldserver - Run the following ↓↓↓\e[0m"
+echo ""
+echo "su - $SETUP_REALM_USER -c 'screen -r $SETUP_REALM_USER'"
+echo "TIP - To exit the screen press ALT + A + D"
+echo ""
+echo -e "\e[32m↓↓↓ To access the authserver - Run the following ↓↓↓\e[0m"
+echo ""
+echo "su - $SETUP_AUTH_USER -c 'screen -r $SETUP_AUTH_USER'"
+echo "TIP - To exit the screen press ALT + A + D"
+echo ""
+echo -e "\e[31m↓↓↓ NOTICE - ONCE YOU HAVE SETUP YOUR WORLDSERVER FULLY, RUN THE FOLLOWING TO ACCESS REMOTELY ↓↓↓\e[0m"
+echo "su - $SETUP_AUTH_USER -c 'updaterealmlist'"
+echo ""
+
+fi
+fi
+fi
+fi

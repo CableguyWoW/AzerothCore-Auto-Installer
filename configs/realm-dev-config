@@ -1,0 +1,20 @@
+CORE_BRANCH="npcbots_3.3.5"
+
+########## REALM SETTINGS
+REALM_NAME="Dev Realm"
+REALM_ID="1"
+REALM_ZONE="8" # https://wowdev.wiki/DB/Cfg_Categories
+REALM_SECURITY="0" # https://AzerothCore.info/en/database/335/auth/account_access#securitylevel
+
+########## SETUP SETTINGS
+SETUP_REALM_PORT="8085"
+SETUP_TYPE="Normal" #Normal or GDB
+SETUP_DEV_WORLD="true"
+SETUP_REALMLIST="true"
+SETUP_REALM_USER="dev"
+SETUP_REALM_PASS="password123"
+
+########## REALM CONNECTION SETTINGS
+REALM_DB_HOST="localhost"
+REALM_DB_USER="dev"
+REALM_DB_PASS="password123"

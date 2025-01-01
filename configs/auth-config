@@ -1,0 +1,11 @@
+CORE_BRANCH="npcbots_3.3.5"
+
+########## AUTH SETTINGS
+SETUP_AUTH="true"
+SETUP_AUTH_USER="auth"
+SETUP_AUTH_PASS="password123"
+
+########## AUTH SETTINGS
+AUTH_DB_HOST="localhost"
+AUTH_DB_USER="auth"
+AUTH_DB_PASS="password123"

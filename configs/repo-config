@@ -1,0 +1,6 @@
+########## SCRIPTS
+SCRIPTS_REPO_URL="https://github.com/CableguyWoW/AzerothCore-Auto-Installer"
+
+########## GAME REPOS URLS
+CORE_REPO_URL="https://github.com/trickerer/AzerothCore-wotlk-with-NPCBots"
+DATA_REPO_URL="https://github.com/wowgaming/client-data/releases/download/v16/data.zip"

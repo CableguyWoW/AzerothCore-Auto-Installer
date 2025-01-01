@@ -1,0 +1,1 @@
+find /home/USER/logs/crashes/ -maxdepth 1 -type f -size -480k -delete
