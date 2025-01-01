@@ -46,7 +46,7 @@ echo "## $NUM.Installing AzerothCore requirements"
 echo "##########################################################"
 echo ""
 sudo apt update -y
-sudo apt install git cmake make gcc g++ clang libssl-dev libbz2-dev libreadline-dev libncurses-dev libboost-all-dev lsb-release gnupg wget p7zip-full screen -y
+sudo apt install git cmake make gcc g++ clang libssl-dev libbz2-dev libreadline-dev libncurses-dev libmysqlclient-dev libboost-all-dev lsb-release gnupg wget p7zip-full screen -y
 fi
 
 
