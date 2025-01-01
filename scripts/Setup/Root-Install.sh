@@ -216,7 +216,7 @@ if [ $SETUP_DEV_WORLD == "true" ]; then
         echo "$SETUP_REALM_USER ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$SETUP_REALM_USER
         echo "Added $SETUP_REALM_USER to sudoers with NOPASSWD."
     fi
-    echo "Added $SETUP_REALM_PASS User account"
+    echo "Added $SETUP_REALM_USER User account"
 fi
 if [ $SETUP_AUTH == "true" ]; then
 	sudo useradd -m -p $SETUP_AUTH_PASS -s /bin/bash $SETUP_AUTH_USER
