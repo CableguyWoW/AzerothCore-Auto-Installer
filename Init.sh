@@ -161,8 +161,8 @@ echo "## $NUM.Setup Commands"
 echo "##########################################################"
 echo ""
 echo "All passwords are stored in - /AzerothCore-Auto-Installer/configs/"
-if [ "$RANDOMIZE_PASSWORDS" = "true" ]; then
-    echo "The default passwords setup is : remotepass123"
+if [ "$RANDOMIZE_PASSWORDS" = "false" ]; then
+    echo "The default passwords setup is : password123"
 fi
 if [ "$remote_db_update" = "true" ]; then
     echo "The REMOTE_DB_PASS has been updated to the users inputted password."
