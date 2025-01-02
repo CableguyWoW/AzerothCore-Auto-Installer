@@ -129,9 +129,9 @@ mkdir /home/$SETUP_AUTH_USER/azerothcore/build
 cd /home/$SETUP_AUTH_USER/azerothcore/build
 # Build flags for CMAKE
 if [ "$SETUP_TYPE" = "Normal" ]; then
-    cmake /home/$SETUP_AUTH_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_AUTH_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DTOOLS_BUILD=db-only -DSCRIPTS=static -DAPPS_BUILD=auth-only
+    cmake /home/$SETUP_AUTH_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_AUTH_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DTOOLS_BUILD=none -DSCRIPTS=static -DAPPS_BUILD=auth-only
 elif [ "$SETUP_TYPE" = "GDB" ]; then
-    cmake /home/$SETUP_AUTH_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_AUTH_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DTOOLS_BUILD=db-only -DSCRIPTS=static -DAPPS_BUILD=auth-only
+    cmake /home/$SETUP_AUTH_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_AUTH_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DTOOLS_BUILD=none -DSCRIPTS=static -DAPPS_BUILD=auth-only
 fi
 # Stop issues with overusing CPU on some hosts
 cpus=$(nproc)
@@ -175,7 +175,8 @@ mkdir /home/$SETUP_AUTH_USER/server/scripts/Restarter/
 mkdir /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/
 sudo cp -r -u /AzerothCore-Auto-Installer/scripts/Restarter/Auth/* /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/
 ## FIX SCRIPTS PERMISSIONS
-sudo chmod +x /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/start.sh
+sudo chmod -R +x /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/
+sudo chown -R $SETUP_AUTH_USER:$SETUP_AUTH_USER /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/
 sed -i "s/realmname/$SETUP_AUTH_USER/g" /home/$SETUP_AUTH_USER/server/scripts/Restarter/Auth/start.sh
 fi
 
