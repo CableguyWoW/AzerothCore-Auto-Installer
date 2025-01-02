@@ -238,7 +238,7 @@ if [ -f "/home/$SETUP_REALM_USER/server/data/data.zip" ]; then
             sudo rm /home/$SETUP_REALM_USER/server/data/data.zip
             mkdir -p /home/$SETUP_REALM_USER//server/data
             cd /home/$SETUP_REALM_USER//server/data
-            wget $DATA_REPO_URL
+            curl -L -o data.zip $DATA_REPO_URL
             7z x data.zip
         elif [[ "$file_choice" =~ ^[Nn]$ ]]; then
             echo "Skipping download." && break
@@ -247,9 +247,9 @@ if [ -f "/home/$SETUP_REALM_USER/server/data/data.zip" ]; then
         fi
     done
 else
-    mkdir -p /home/$SETUP_REALM_USER//server/data 
-    cd /home/$SETUP_REALM_USER//server/data
-    wget $DATA_REPO_URL
+    mkdir -p /home/$SETUP_REALM_USER/server/data 
+    cd /home/$SETUP_REALM_USER/server/data
+    curl -L -o data.zip $DATA_REPO_URL
     7z x data.zip
 fi
 fi
@@ -267,11 +267,8 @@ mkdir /home/$SETUP_REALM_USER/server/scripts/Restarter/
 mkdir /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
 sudo cp -r -u /AzerothCore-Auto-Installer/scripts/Restarter/World/* /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
 ## FIX SCRIPTS PERMISSIONS
-sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
-sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/restarter_world_gdb.sh
-sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/gdbcommands
-sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
-sudo chmod +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/restarter_world.sh
+sudo chmod -R +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World
+sudo chown -R $SETUP_AUTH_USER:$SETUP_AUTH_USER /home/$SETUP_REALM_USER/server/scripts/Restarter/World
 sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
 sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
 fi
