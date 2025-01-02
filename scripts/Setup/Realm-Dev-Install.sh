@@ -268,7 +268,7 @@ mkdir /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
 sudo cp -r -u /AzerothCore-Auto-Installer/scripts/Restarter/World/* /home/$SETUP_REALM_USER/server/scripts/Restarter/World/
 ## FIX SCRIPTS PERMISSIONS
 sudo chmod -R +x /home/$SETUP_REALM_USER/server/scripts/Restarter/World
-sudo chown -R $SETUP_AUTH_USER:$SETUP_AUTH_USER /home/$SETUP_REALM_USER/server/scripts/Restarter/World
+sudo chown -R $SETUP_REALM_USER:$SETUP_REALM_USER /home/$SETUP_REALM_USER/server/scripts/Restarter/World
 sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/GDB/start_gdb.sh
 sudo sed -i "s/realmname/$SETUP_REALM_USER/g" /home/$SETUP_REALM_USER/server/scripts/Restarter/World/Normal/start.sh
 fi
