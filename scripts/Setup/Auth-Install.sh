@@ -5,8 +5,8 @@
 
 . /AzerothCore-Auto-Installer/configs/root-config
 . /AzerothCore-Auto-Installer/configs/repo-config
-. /AzerothCore-Auto-Installer/configs/auth-config
 . /AzerothCore-Auto-Installer/configs/realm-dev-config
+. /AzerothCore-Auto-Installer/configs/auth-config
 
 
 if [ $USER != "$SETUP_AUTH_USER" ]; then
