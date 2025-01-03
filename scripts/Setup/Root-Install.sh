@@ -122,7 +122,7 @@ fi
 service mysql restart
 
 # Update MySQL user settings
-mysql -u root -p$ROOT_PASS << EOF
+mysql -u root << EOF
 USE mysql;
 UPDATE user SET user='$ROOT_USER' WHERE user='root';
 ALTER USER '$ROOT_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ROOT_PASS';
