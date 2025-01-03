@@ -1,4 +1,6 @@
 CORE_BRANCH="npcbots_3.3.5"
+CORE_REPO_URL="https://github.com/trickerer/AzerothCore-wotlk-with-NPCBots"
+DATA_REPO_URL="https://github.com/wowgaming/client-data/releases/download/v16/data.zip"
 
 ########## REALM SETTINGS
 REALM_NAME="Dev Realm"

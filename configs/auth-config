@@ -1,4 +1,5 @@
 CORE_BRANCH="npcbots_3.3.5"
+CORE_REPO_URL="https://github.com/trickerer/AzerothCore-wotlk-with-NPCBots"
 
 ########## AUTH SETTINGS
 SETUP_AUTH="true"

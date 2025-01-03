@@ -4,9 +4,8 @@
 ### TESTED WITH DEBIAN ONLY
 
 . /AzerothCore-Auto-Installer/configs/root-config
-. /AzerothCore-Auto-Installer/configs/repo-config
 
-if [ ! -f ./configs/root-config ] || [ ! -f ./configs/repo-config ]; then
+if [ ! -f ./configs/root-config ]; then
     echo "Config file not found! Add configs!"
     exit;
 fi
@@ -166,6 +165,8 @@ if [ "$RANDOMIZE_PASSWORDS" = "false" ]; then
 fi
 if [ "$remote_db_update" = "true" ]; then
     echo "The REMOTE_DB_PASS has been updated to the users inputted password."
+elif [ "$remote_db_update" = "false" ]; then
+    echo "The REMOTE_DB_PASS is the default password : remotepass123"
 fi
 echo ""
 echo -e "\e[32m↓↓↓ Next - Run the following ↓↓↓\e[0m"
