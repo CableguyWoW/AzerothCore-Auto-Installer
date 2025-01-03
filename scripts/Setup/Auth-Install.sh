@@ -67,7 +67,7 @@ echo ""
 # Auth Database Setup
 echo "Checking if the 'auth' database exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE 'auth';" | grep -q "auth"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE auth DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE auth DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;;"
     if [[ $? -eq 0 ]]; then
         echo "Auth database created."
     else
@@ -81,7 +81,7 @@ fi
 # Create the auth user if it does not already exist
 echo "Checking if the auth user '$AUTH_DB_USER' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE User = '$AUTH_DB_USER' AND Host = 'localhost';" | grep -q "$AUTH_DB_USER"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '$AUTH_DB_USER'@'localhost' IDENTIFIED BY '$AUTH_DB_PASS';"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '$AUTH_DB_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$AUTH_DB_PASS';"
     if [[ $? -eq 0 ]]; then
         echo "Auth DB user '$AUTH_DB_USER' created."
     else
@@ -93,7 +93,7 @@ else
     
     # Update password for existing user
     echo "Updating password for auth DB user '$AUTH_DB_USER'..."
-    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '$AUTH_DB_USER'@'localhost' IDENTIFIED BY '$AUTH_DB_PASS';"; then
+    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '$AUTH_DB_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$AUTH_DB_PASS';"; then
         echo "Password for auth DB user '$AUTH_DB_USER' updated successfully."
     else
         echo "Failed to update password for auth DB user '$AUTH_DB_USER'."

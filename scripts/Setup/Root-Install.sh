@@ -153,7 +153,7 @@ if [ "$REMOTE_DB_SETUP" == "true" ]; then
     
     # Check if the remote user exists
     if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE User = '$REMOTE_DB_USER' AND Host = '$REMOTE_DB_HOST';" | grep -q "$REMOTE_DB_USER"; then
-        mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '$REMOTE_DB_USER'@'$REMOTE_DB_HOST' IDENTIFIED BY '$REMOTE_DB_PASS';"
+        mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '$REMOTE_DB_USER'@'$REMOTE_DB_HOST' IDENTIFIED WITH mysql_native_password BY '$REMOTE_DB_PASS';"
         if [[ $? -eq 0 ]]; then
             echo "Remote DB user '$REMOTE_DB_USER' created."
         else

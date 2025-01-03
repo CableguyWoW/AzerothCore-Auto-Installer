@@ -72,7 +72,7 @@ echo ""
 # World Database Setup
 echo "Checking if the database '${REALM_DB_USER}_world' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_world';" | grep -q "${REALM_DB_USER}_world"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_world DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_world DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;;"
     if [[ $? -eq 0 ]]; then
         echo "Database '${REALM_DB_USER}_world' created."
     else
@@ -85,7 +85,7 @@ fi
 
 echo "Checking if the database '${REALM_DB_USER}_character' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_character';" | grep -q "${REALM_DB_USER}_character"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_character DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_character DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;;"
     if [[ $? -eq 0 ]]; then
         echo "Database '${REALM_DB_USER}_character' created."
     else
@@ -99,7 +99,7 @@ fi
 # Create the realm user if it does not already exist
 echo "Checking if the realm user '${REALM_DB_USER}' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE User = '${REALM_DB_USER}' AND Host = 'localhost';" | grep -q "${REALM_DB_USER}"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '${REALM_DB_USER}'@'localhost' IDENTIFIED BY '$REALM_DB_PASS';"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE USER '${REALM_DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '$REALM_DB_PASS';"
     if [[ $? -eq 0 ]]; then
         echo "Realm DB user '${REALM_DB_USER}' created."
     else
@@ -111,7 +111,7 @@ else
     
     # Update password for existing user
     echo "Updating password for realm DB user '${REALM_DB_USER}'..."
-    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '${REALM_DB_USER}'@'localhost' IDENTIFIED BY '$REALM_DB_PASS';"; then
+    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '${REALM_DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '$REALM_DB_PASS';"; then
         echo "Password for realm DB user '${REALM_DB_USER}' updated successfully."
     else
         echo "Failed to update password for realm DB user '${REALM_DB_USER}'."
