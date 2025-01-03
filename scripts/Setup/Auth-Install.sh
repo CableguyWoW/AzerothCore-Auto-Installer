@@ -91,6 +91,15 @@ if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE 
     fi
 else
     echo "Auth DB user '$AUTH_DB_USER' already exists."
+    
+    # Update password for existing user
+    echo "Updating password for auth DB user '$AUTH_DB_USER'..."
+    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '$AUTH_DB_USER'@'localhost' IDENTIFIED BY '$AUTH_DB_PASS';"; then
+        echo "Password for auth DB user '$AUTH_DB_USER' updated successfully."
+    else
+        echo "Failed to update password for auth DB user '$AUTH_DB_USER'."
+        exit 1
+    fi
 fi
 
 # Grant privileges to the auth user
@@ -106,8 +115,8 @@ fi
 mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "FLUSH PRIVILEGES;"
 echo "Flushed privileges."
 echo "Setup Auth DB Account completed."
-
 fi
+
 
 ((NUM++))
 if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then

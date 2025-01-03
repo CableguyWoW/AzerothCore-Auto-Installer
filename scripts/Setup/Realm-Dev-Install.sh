@@ -109,6 +109,15 @@ if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE 
     fi
 else
     echo "Realm DB user '${REALM_DB_USER}' already exists."
+    
+    # Update password for existing user
+    echo "Updating password for realm DB user '${REALM_DB_USER}'..."
+    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '${REALM_DB_USER}'@'localhost' IDENTIFIED BY '$REALM_DB_PASS';"; then
+        echo "Password for realm DB user '${REALM_DB_USER}' updated successfully."
+    else
+        echo "Failed to update password for realm DB user '${REALM_DB_USER}'."
+        exit 1
+    fi
 fi
 
 # Grant privileges
