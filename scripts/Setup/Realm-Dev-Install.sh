@@ -72,7 +72,7 @@ echo ""
 # World Database Setup
 echo "Checking if the database '${REALM_DB_USER}_world' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_world';" | grep -q "${REALM_DB_USER}_world"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_world DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;;"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_world DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;"
     if [[ $? -eq 0 ]]; then
         echo "Database '${REALM_DB_USER}_world' created."
     else
@@ -85,7 +85,7 @@ fi
 
 echo "Checking if the database '${REALM_DB_USER}_character' exists..."
 if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SHOW DATABASES LIKE '${REALM_DB_USER}_character';" | grep -q "${REALM_DB_USER}_character"; then
-    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_character DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;;"
+    mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "CREATE DATABASE ${REALM_DB_USER}_character DEFAULT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci;"
     if [[ $? -eq 0 ]]; then
         echo "Database '${REALM_DB_USER}_character' created."
     else
@@ -209,7 +209,7 @@ echo "## $NUM.Setup Config"
 echo "##########################################################"
 echo ""
 cd /home/$SETUP_REALM_USER/server/etc/
-if [ -f "home/$SETUP_REALM_USER/server/etc/authserver.conf.dist" ]; then
+if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf.dist" ]; then
     # Backup old conf
     mv "worldserver.conf" "worldserver_$(date +%Y%m%d_%H%M%S).conf"
     mv worldserver.conf.dist worldserver.conf
