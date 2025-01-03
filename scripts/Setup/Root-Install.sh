@@ -114,6 +114,10 @@ fi
 # Restart the MySQL service to apply changes (with skip-networking)
 service mysql restart
 
+# Stop MySQL service completely before starting it in safe mode
+echo "Stopping MySQL service completely before starting in safe mode..."
+sudo service mysql stop
+
 # Start MySQL in safe mode (skip-grant-tables) to allow user changes without a password
 echo "Starting MySQL in safe mode to modify user settings..."
 sudo mysqld_safe --skip-grant-tables --skip-networking &
