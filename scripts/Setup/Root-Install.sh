@@ -111,17 +111,18 @@ if ! grep -q "^sql_mode" "$MY_CNF"; then
     echo 'sql_mode=""' | sudo tee -a "$MY_CNF" > /dev/null
 fi
 
-# Conditionally add bind address if REMOTE_DB_SETUP is true
-if [ "$REMOTE_DB_SETUP" = "true" ]; then
-    if ! grep -q "^bind-address" "$MY_CNF"; then
-        echo "bind-address = 0.0.0.0" | sudo tee -a "$MY_CNF" > /dev/null
-    fi
-fi
-
-# Restart the MySQL service to apply changes
+# Restart the MySQL service to apply changes (with skip-networking)
 service mysql restart
 
+# Start MySQL in safe mode (skip-grant-tables) to allow user changes without a password
+echo "Starting MySQL in safe mode to modify user settings..."
+sudo mysqld_safe --skip-grant-tables --skip-networking &
+
+# Wait for MySQL to start in safe mode
+sleep 5
+
 # Update MySQL user settings
+echo "Updating MySQL user settings..."
 mysql -u root << EOF
 USE mysql;
 UPDATE user SET user='$ROOT_USER' WHERE user='root';
@@ -130,6 +131,25 @@ GRANT ALL PRIVILEGES ON *.* TO '$ROOT_USER'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 quit
 EOF
+
+# Stop MySQL safe mode
+echo "Stopping MySQL safe mode..."
+sudo service mysql stop
+
+# Restart MySQL normally
+echo "Restarting MySQL normally..."
+sudo service mysql start
+
+# Configure bind-address after restart
+if [ "$REMOTE_DB_SETUP" = "true" ]; then
+    if ! grep -q "^bind-address" "$MY_CNF"; then
+        echo "bind-address = 0.0.0.0" | sudo tee -a "$MY_CNF" > /dev/null
+    fi
+fi
+
+# Restart MySQL again after bind-address update
+echo "Restarting MySQL to apply bind-address changes..."
+sudo service mysql restart
 
 # Remove skip-networking if not required
 sudo sed -i '/^skip-networking/d' "$MY_CNF"
