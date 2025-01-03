@@ -130,9 +130,9 @@ echo "Manually updating MySQL user settings in mysql.user table..."
 mysql -u root << EOF
 USE mysql;
 
-# Manually update root user to use mysql_native_password and set the password
+# Manually update root user to use mysql_native_password and set the password (correct syntax for MySQL 8.0+)
 UPDATE user 
-SET authentication_string = PASSWORD('$ROOT_PASS') 
+SET authentication_string = BYPASS_UNIX_SOCKET('$ROOT_PASS') 
 WHERE user = 'root' AND host = 'localhost';
 
 # Ensure the root user is granted all privileges
@@ -174,6 +174,7 @@ sudo sed -i '/^skip-networking/d' "$MY_CNF"
 # Optional: Restart MySQL again after user adjustments
 service mysql restart
 fi
+
 
 
 ((NUM++))
