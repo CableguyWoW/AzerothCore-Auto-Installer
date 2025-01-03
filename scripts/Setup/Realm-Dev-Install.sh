@@ -210,25 +210,33 @@ echo "## $NUM.Setup Config"
 echo "##########################################################"
 echo ""
 cd /home/$SETUP_REALM_USER/server/etc/
-mv worldserver.conf.dist worldserver.conf
-## Changing Config values
-echo "Changing Config values"
-## Misc Edits
-sed -i 's/RealmID = 1/RealmID = '${REALM_ID}'/g' worldserver.conf
-sed -i 's/WorldServerPort = 8085/WorldServerPort = '${SETUP_REALM_PORT}'/g' worldserver.conf
-sed -i 's/RealmZone = 1/RealmZone = '${REALM_ZONE}'/g' worldserver.conf
-sed -i 's/mmap.enablePathFinding = 0/mmap.enablePathFinding = 1/g' worldserver.conf
-## Folders
-sed -i 's^LogsDir = ""^LogsDir = "/home/'${SETUP_REALM_USER}'/server/logs"^g' worldserver.conf
-sed -i 's^DataDir = "."^DataDir = "/home/'${SETUP_REALM_USER}'/server/data"^g' worldserver.conf
-sed -i 's^BuildDirectory  = ""^BuildDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/build"^g' worldserver.conf
-sed -i 's^SourceDirectory  = ""^SourceDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/"^g' worldserver.conf
-## LoginDatabaseInfo
-sed -i "s/127.0.0.1;3306;acore;acore;acore_auth/${AUTH_DB_HOST};3306;${AUTH_DB_USER};${AUTH_DB_PASS};${AUTH_DB_USER};/g" worldserver.conf
-## WorldDatabaseInfo
-sed -i "s/127.0.0.1;3306;acore;acore;acore_world/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_world/g" worldserver.conf
-## CharacterDatabaseInfo
-sed -i "s/127.0.0.1;3306;acore;acore;acore_characters/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_character/g" worldserver.conf
+if [ -f "home/$SETUP_REALM_USER/server/etc/authserver.conf.dist" ]; then
+    # Backup old conf
+    mv "worldserver.conf" "worldserver_$(date +%Y%m%d_%H%M%S).conf"
+    mv worldserver.conf.dist worldserver.conf
+    echo "Moved worldserver.conf.dist to worldserver.conf."
+    ## Changing Config values
+    echo "Changing Config values"
+    ## Misc Edits
+    sed -i 's/RealmID = 1/RealmID = '${REALM_ID}'/g' worldserver.conf
+    sed -i 's/WorldServerPort = 8085/WorldServerPort = '${SETUP_REALM_PORT}'/g' worldserver.conf
+    sed -i 's/RealmZone = 1/RealmZone = '${REALM_ZONE}'/g' worldserver.conf
+    sed -i 's/mmap.enablePathFinding = 0/mmap.enablePathFinding = 1/g' worldserver.conf
+    ## Folders
+    sed -i 's^LogsDir = ""^LogsDir = "/home/'${SETUP_REALM_USER}'/server/logs"^g' worldserver.conf
+    sed -i 's^DataDir = "."^DataDir = "/home/'${SETUP_REALM_USER}'/server/data"^g' worldserver.conf
+    sed -i 's^BuildDirectory  = ""^BuildDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/build"^g' worldserver.conf
+    sed -i 's^SourceDirectory  = ""^SourceDirectory  = "/home/'${SETUP_REALM_USER}'/azerothcore/"^g' worldserver.conf
+    ## LoginDatabaseInfo
+    sed -i "s/127.0.0.1;3306;acore;acore;acore_auth/${AUTH_DB_HOST};3306;${AUTH_DB_USER};${AUTH_DB_PASS};${AUTH_DB_USER};/g" worldserver.conf
+    ## WorldDatabaseInfo
+    sed -i "s/127.0.0.1;3306;acore;acore;acore_world/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_world/g" worldserver.conf
+    ## CharacterDatabaseInfo
+    sed -i "s/127.0.0.1;3306;acore;acore;acore_characters/${REALM_DB_HOST};3306;${REALM_DB_USER};${REALM_DB_PASS};${REALM_DB_USER}_character/g" worldserver.conf
+else
+    echo "Missing config file, exiting..."
+    exit 1
+fi
 fi
 
 

@@ -159,16 +159,21 @@ echo "## $NUM.Setup Config"
 echo "##########################################################"
 echo ""
 cd /home/$SETUP_AUTH_USER/server/etc/
-if [ -f "authserver.conf.dist" ]; then
+if [ -f "/home/$SETUP_AUTH_USER/server/etc/authserver.conf.dist" ]; then
+    # Backup old conf
+    mv "authserver.conf" "authserver_$(date +%Y%m%d_%H%M%S).conf"
     mv "authserver.conf.dist" "authserver.conf"
     echo "Moved authserver.conf.dist to authserver.conf."
+    ## Changing Config values
+    echo "Changing Config values"
+    sed -i 's^LogsDir = ""^LogsDir = "/home/'${SETUP_AUTH_USER}'/server/logs"^g' authserver.conf
+    sed -i "s/Updates.EnableDatabases = 0/Updates.EnableDatabases = 1/g" authserver.conf
+    sed -i "s/Updates.AutoSetup = 0/Updates.AutoSetup = 1/g" authserver.conf
+    sed -i "s/127.0.0.1;3306;acore;acore;acore_auth/${AUTH_DB_HOST};3306;${AUTH_DB_USER};${AUTH_DB_PASS};${AUTH_DB_USER};/g" authserver.conf
+else
+    echo "Missing config file, exiting..."
+    exit 1
 fi
-## Changing Config values
-echo "Changing Config values"
-sed -i 's^LogsDir = ""^LogsDir = "/home/'${SETUP_AUTH_USER}'/server/logs"^g' authserver.conf
-sed -i "s/Updates.EnableDatabases = 0/Updates.EnableDatabases = 1/g" authserver.conf
-sed -i "s/Updates.AutoSetup = 0/Updates.AutoSetup = 1/g" authserver.conf
-sed -i "s/127.0.0.1;3306;acore;acore;acore_auth/${AUTH_DB_HOST};3306;${AUTH_DB_USER};${AUTH_DB_PASS};${AUTH_DB_USER};/g" authserver.conf
 fi
 
 
