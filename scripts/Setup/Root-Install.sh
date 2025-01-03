@@ -125,13 +125,26 @@ sudo mysqld_safe --skip-grant-tables --skip-networking &
 # Wait for MySQL to start in safe mode
 sleep 5
 
-# Update MySQL user settings
-echo "Updating MySQL user settings..."
+# Update MySQL user settings manually in the mysql.user table (bypassing GRANT/ALTER USER)
+echo "Manually updating MySQL user settings in mysql.user table..."
 mysql -u root << EOF
 USE mysql;
-UPDATE user SET user='$ROOT_USER' WHERE user='root';
-ALTER USER '$ROOT_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ROOT_PASS';
-GRANT ALL PRIVILEGES ON *.* TO '$ROOT_USER'@'localhost' WITH GRANT OPTION;
+
+# Manually update root user to use mysql_native_password and set the password
+UPDATE user 
+SET authentication_string = PASSWORD('$ROOT_PASS') 
+WHERE user = 'root' AND host = 'localhost';
+
+# Ensure the root user is granted all privileges
+UPDATE user 
+SET Grant_priv = 'Y', Super_priv = 'Y' 
+WHERE user = 'root' AND host = 'localhost';
+
+# Optionally update the user field if needed (e.g., change root to another name)
+UPDATE user 
+SET user = '$ROOT_USER' 
+WHERE user = 'root' AND host = 'localhost';
+
 FLUSH PRIVILEGES;
 quit
 EOF
