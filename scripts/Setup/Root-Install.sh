@@ -111,37 +111,49 @@ if ! grep -q "^sql_mode" "$MY_CNF"; then
     echo 'sql_mode=""' | sudo tee -a "$MY_CNF" > /dev/null
 fi
 
-# Restart the MySQL service to apply changes (with skip-networking)
+# Restart MySQL service to apply some changes
+echo "Restarting MySQL to apply initial changes..."
 service mysql restart
 
-# Stop MySQL service completely before starting it in safe mode
+# Properly stop MySQL before going into safe mode
 echo "Stopping MySQL service completely before starting in safe mode..."
 sudo service mysql stop
+
+# Ensure no MySQL processes are running (kill any lingering processes)
+echo "Checking for any running MySQL processes..."
+ps aux | grep mysql | grep -v grep | awk '{print $2}' | xargs sudo kill -9
+
+# Remove any leftover socket files that might block new connections
+echo "Removing leftover socket files..."
+sudo rm -f /var/run/mysqld/mysqld.sock
+sudo rm -f /var/run/mysqld/mysqlx.sock
 
 # Start MySQL in safe mode (skip-grant-tables) to allow user changes without a password
 echo "Starting MySQL in safe mode to modify user settings..."
 sudo mysqld_safe --skip-grant-tables --skip-networking &
 
-# Wait for MySQL to start in safe mode
-sleep 5
+# Wait for MySQL to fully start in safe mode
+echo "Waiting for MySQL to start in safe mode..."
+sleep 10
 
 # Update MySQL user settings manually in the mysql.user table (bypassing GRANT/ALTER USER)
 echo "Manually updating MySQL user settings in mysql.user table..."
+
 mysql -u root << EOF
 USE mysql;
 
-# Manually update root user to use mysql_native_password and set the password (correct syntax for MySQL 8.0+)
-UPDATE user 
-SET authentication_string = BYPASS_UNIX_SOCKET('$ROOT_PASS') 
+# Correct syntax for MySQL 8.0+ to set the password (authentication_string) and change to mysql_native_password
+UPDATE mysql.user 
+SET authentication_string = PASSWORD('$ROOT_PASS')
 WHERE user = 'root' AND host = 'localhost';
 
-# Ensure the root user is granted all privileges
-UPDATE user 
+# Ensure the root user has all necessary privileges
+UPDATE mysql.user 
 SET Grant_priv = 'Y', Super_priv = 'Y' 
 WHERE user = 'root' AND host = 'localhost';
 
-# Optionally update the user field if needed (e.g., change root to another name)
-UPDATE user 
+# Optionally, update the user name (if needed, change root to another name)
+UPDATE mysql.user 
 SET user = '$ROOT_USER' 
 WHERE user = 'root' AND host = 'localhost';
 
@@ -149,9 +161,13 @@ FLUSH PRIVILEGES;
 quit
 EOF
 
-# Stop MySQL safe mode
+# Stop MySQL safe mode to restart normally
 echo "Stopping MySQL safe mode..."
 sudo service mysql stop
+
+# Ensure MySQL is completely stopped before restarting normally
+echo "Ensuring MySQL has fully stopped before restarting..."
+ps aux | grep mysql | grep -v grep | awk '{print $2}' | xargs sudo kill -9
 
 # Restart MySQL normally
 echo "Restarting MySQL normally..."
@@ -171,10 +187,10 @@ sudo service mysql restart
 # Remove skip-networking if not required
 sudo sed -i '/^skip-networking/d' "$MY_CNF"
 
-# Optional: Restart MySQL again after user adjustments
-service mysql restart
+# Final restart to ensure everything is applied correctly
+echo "Final MySQL restart to apply all changes..."
+sudo service mysql restart
 fi
-
 
 
 ((NUM++))
