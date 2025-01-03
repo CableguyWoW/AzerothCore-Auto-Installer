@@ -188,9 +188,9 @@ mkdir /home/$SETUP_REALM_USER/azerothcore/build
 cd /home/$SETUP_REALM_USER/azerothcore/build
 # Build flags for CMAKE
 if [ "$SETUP_TYPE" = "Normal" ]; then
-    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DTOOLS_BUILD=db-only -DSCRIPTS=static -DMODULES=dynamic -DAPPS_BUILD=world-only
+    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=0 -DTOOLS_BUILD=db-only -DSCRIPTS=$SETUP_SCRIPTS -DMODULES=$SETUP_MODULES -DAPPS_BUILD=world-only
 elif [ "$SETUP_TYPE" = "GDB" ]; then
-    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DTOOLS_BUILD=db-only -DSCRIPTS=static -DMODULES=dynamic -DAPPS_BUILD=world-only
+    cmake /home/$SETUP_REALM_USER/azerothcore/ -DCMAKE_INSTALL_PREFIX=/home/$SETUP_REALM_USER/server -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DTOOLS_BUILD=db-only -DSCRIPTS=$SETUP_SCRIPTS -DMODULES=$SETUP_MODULES -DAPPS_BUILD=world-only
 fi
 # Stop issues with overusing CPU on some hosts
 cpus=$(nproc)
