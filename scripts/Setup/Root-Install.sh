@@ -90,153 +90,96 @@ echo ""
 MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
 
 # Function to check if MySQL is running
-check_mysql_running() 
-{
+check_mysql_running() {
     systemctl is-active --quiet mysql
 }
 
 # Function to stop MySQL forcefully if needed
-force_stop_mysql() 
-{
+force_stop_mysql() {
     echo "Attempting to stop MySQL forcefully..."
-    # Get MySQL process IDs and terminate them
-    pids=$(pgrep -u mysql)
-    if [ -n "$pids" ]; then
-        echo "MySQL processes found: $pids"
-        sudo kill -TERM $pids
-        sleep 5  # Wait a moment for termination
-        pids=$(pgrep -u mysql)
-        if [ -n "$pids" ]; then
-            echo "MySQL processes still running. Sending SIGKILL..."
-            sudo kill -KILL $pids
-        fi
-    else
-        echo "No MySQL processes found to kill."
-    fi
+    sudo pkill mysqld
+    sleep 2  # Wait a moment to ensure all MySQL processes are killed
 }
 
-# Function to stop MySQL forcefully if needed
-stop_mysql() 
-{
-# Stop MySQL service gracefully
-echo "Stopping MySQL service..."
-sudo service mysql stop
-
-# Wait for MySQL to stop gracefully
-echo "Waiting for MySQL to stop gracefully... Please wait."
-attempts=0
-max_attempts=5
-while check_mysql_running; do
-    if [ $attempts -ge $max_attempts ]; then
-        echo "MySQL did not stop gracefully. Proceeding with forceful termination..."
-        force_stop_mysql
-        break
-    fi
-    echo "Waiting for MySQL to stop... Attempt $((attempts+1)) of $max_attempts"
-    sleep 3
-    attempts=$((attempts + 1))
-done
-
-# Final check to ensure MySQL has stopped
-if check_mysql_running; then
-    echo "ERROR: MySQL is still running despite attempts to stop it. Please check the logs."
-    exit 1
-else
-    echo "MySQL stopped successfully."
-fi
+# Stop MySQL gracefully and then forcefully if needed
+stop_mysql() {
+    echo "Stopping MySQL service..."
+    sudo systemctl stop mysql
+    sleep 2  # Give it some time to stop gracefully
+    force_stop_mysql  # Force stop if needed
 }
 
-# Function to start MySQL
-start_mysql() 
-{
-# Restart MySQL normally
-echo "Restarting MySQL normally... Please wait."
-sudo service mysql start
+# Start MySQL in safe mode (no password authentication)
+start_mysql_safe() {
+    echo "Starting MySQL in safe mode..."
+    sudo mysqld_safe --skip-grant-tables --skip-networking > /var/log/mysql_safe.log 2>&1 &
+    sleep 5  # Wait for MySQL to start in safe mode
+}
 
-echo "Waiting for MySQL to start normally... Please wait."
-attempts=0
-while ! check_mysql_running; do
-    if [ $attempts -ge $max_attempts ]; then
-        echo "MySQL failed to start. Please check the logs."
+# Check MySQL root login by running a command
+check_mysql_login() {
+    echo "Checking MySQL login..."
+    mysql -u root -e "SHOW DATABASES;" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "Error: Unable to login to MySQL as root."
         exit 1
     fi
-    echo "Waiting for MySQL to start... Attempt $((attempts+1)) of $max_attempts"
-    sleep 3
-    attempts=$((attempts + 1))
-done
-echo "MySQL started successfully."
+    echo "MySQL root login successful."
 }
 
-# Function to restart MySQL
-restart_mysql()
-{
-  stop_mysql;
-  start_mysql;
-}
+# Function to reset the MySQL root password
+reset_mysql_root_password() {
+    echo "Resetting MySQL root password..."
 
+    # Generate SHA-256 hash for the root password using sha256sum
+    hashed_pass=$(echo -n "$ROOT_PASS" | sha256sum | cut -d" " -f1)
 
-# Set root password for MySQL installation
-echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
-echo "mysql-server mysql-server/root_password_again password $ROOT_PASS" | sudo debconf-set-selections
+    # Use the UPDATE query to update the root password
+    mysql -u root <<EOF
+    USE mysql;
 
-# Install MySQL server
-apt-get -y install mysql-server
+    UPDATE user
+    SET authentication_string = '*$hashed_pass'
+    WHERE user = 'root' AND host = 'localhost';
 
-# Configure MySQL settings
-# Add skip-networking if not present
-if ! grep -q "^skip-networking" "$MY_CNF"; then
-    echo "skip-networking" | sudo tee -a "$MY_CNF" > /dev/null
-fi
-
-# Add max_allowed_packet if not present
-if ! grep -q "^max_allowed_packet" "$MY_CNF"; then
-    echo "max_allowed_packet = 128M" | sudo tee -a "$MY_CNF" > /dev/null
-fi
-
-# Add sql_mode if not present
-if ! grep -q "^sql_mode" "$MY_CNF"; then
-    echo 'sql_mode=""' | sudo tee -a "$MY_CNF" > /dev/null
-fi
-
-stop_mysql;
-
-# Start MySQL in safe mode (skip-grant-tables) to allow user changes without a password
-echo "Starting MySQL in safe mode to modify user settings... Please wait."
-sudo mysqld_safe --skip-grant-tables --skip-networking &
-sleep 5  # Wait for MySQL to start in safe mode
-
-# Update MySQL root user settings
-echo "Manually updating MySQL root user settings... Please wait."
-mysql -u root <<EOF
-USE mysql;
-
-UPDATE user 
-SET authentication_string = '$ROOT_PASS', plugin = 'mysql_native_password'
-WHERE user = 'root' AND host = 'localhost';
-
-UPDATE user 
-SET Grant_priv = 'Y', Super_priv = 'Y'
-WHERE user = 'root' AND host = 'localhost';
-
-FLUSH PRIVILEGES;
+    FLUSH PRIVILEGES;
 EOF
 
-restart_mysql;
+    echo "Root password updated."
+}
 
-# Configure bind-address after restart if needed
-if [ "$REMOTE_DB_SETUP" = "true" ]; then
-    if ! grep -q "^bind-address" "$MY_CNF"; then
-        echo "bind-address = 0.0.0.0" | sudo tee -a "$MY_CNF" > /dev/null
-    fi
+# Main script
+stop_mysql
+start_mysql_safe
+
+# Check if MySQL is running in safe mode
+if ! ps aux | grep -q '[m]ysqld'; then
+    echo "MySQL failed to start in safe mode"
+    exit 1
 fi
 
-restart_mysql;
+# Check MySQL root login
+check_mysql_login
 
-# Remove skip-networking if not required
-sudo sed -i '/^skip-networking/d' "$MY_CNF"
+# Reset the root password
+reset_mysql_root_password
 
-restart_mysql;
+# Stop the MySQL instance running in safe mode
+echo "Stopping MySQL safe mode..."
+sudo pkill mysqld
+sleep 2  # Wait a moment to ensure MySQL has stopped
 
+# Restart MySQL normally
+echo "Restarting MySQL normally..."
+sudo systemctl restart mysql
+
+# Final check: Ensure MySQL is running normally
+if ! check_mysql_running; then
+    echo "Error: MySQL failed to start normally."
+    exit 1
+fi
+
+echo "MySQL setup completed successfully!"
 fi
 
 
