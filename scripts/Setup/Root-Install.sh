@@ -87,6 +87,14 @@ echo "## $NUM. Install MySQL Server"
 echo "##########################################################"
 echo ""
 
+# Set root password for MySQL installation
+echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
+echo "mysql-server mysql-server/root_password_again password $ROOT_PASS" | sudo debconf-set-selections
+
+# Install MySQL server
+apt-get -y install mysql-server
+
+# Define MySQL config file and root password
 MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
 
 # Function to check if MySQL is running
@@ -131,15 +139,13 @@ check_mysql_login() {
 reset_mysql_root_password() {
     echo "Resetting MySQL root password..."
 
-    # Generate SHA-256 hash for the root password using sha256sum
-    hashed_pass=$(echo -n "$ROOT_PASS" | sha256sum | cut -d" " -f1)
-
-    # Use the UPDATE query to update the root password
+    # Directly set the password and plugin for root user in MySQL 8
     mysql -u root <<EOF
     USE mysql;
 
     UPDATE user
-    SET authentication_string = '*$hashed_pass'
+    SET authentication_string = SHA2('$ROOT_PASS', 256), 
+        plugin = 'mysql_native_password'
     WHERE user = 'root' AND host = 'localhost';
 
     FLUSH PRIVILEGES;
@@ -180,6 +186,7 @@ if ! check_mysql_running; then
 fi
 
 echo "MySQL setup completed successfully!"
+
 fi
 
 
