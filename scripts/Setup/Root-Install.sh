@@ -87,16 +87,7 @@ echo "## $NUM. Install MySQL Server"
 echo "##########################################################"
 echo ""
 
-# Set root password for MySQL installation
-echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
-echo "mysql-server mysql-server/root_password_again password $ROOT_PASS" | sudo debconf-set-selections
-
-# Install MySQL server
-apt-get -y install mysql-server
-
-# Define MySQL config file and root password
-MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
-
+### Functions
 # Function to check if MySQL is running
 check_mysql_running() {
     systemctl is-active --quiet mysql
@@ -154,6 +145,39 @@ EOF
     echo "Root password updated."
 }
 
+## Script start
+# Set root password for MySQL installation
+echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
+echo "mysql-server mysql-server/root_password_again password $ROOT_PASS" | sudo debconf-set-selections
+
+# Install MySQL server
+apt-get -y install mysql-server
+
+# Define MySQL config file and root password
+MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
+
+# Add skip-networking if not present
+if ! grep -q "^skip-networking" "$MY_CNF"; then
+    echo "skip-networking" | sudo tee -a "$MY_CNF" > /dev/null
+fi
+
+# Add max_allowed_packet if not present
+if ! grep -q "^max_allowed_packet" "$MY_CNF"; then
+    echo "max_allowed_packet = 128M" | sudo tee -a "$MY_CNF" > /dev/null
+fi
+
+# Add sql_mode if not present
+if ! grep -q "^sql_mode" "$MY_CNF"; then
+    echo 'sql_mode=""' | sudo tee -a "$MY_CNF" > /dev/null
+fi
+
+# Conditionally add bind address if REMOTE_DB_SETUP is true
+if [ "$REMOTE_DB_SETUP" = "true" ]; then
+    if ! grep -q "^bind-address" "$MY_CNF"; then
+        echo "bind-address = 0.0.0.0" | sudo tee -a "$MY_CNF" > /dev/null
+    fi
+fi
+
 # Main script
 stop_mysql
 start_mysql_safe
@@ -168,12 +192,15 @@ fi
 check_mysql_login
 
 # Reset the root password
-reset_mysql_root_password
+#reset_mysql_root_password
 
 # Stop the MySQL instance running in safe mode
 echo "Stopping MySQL safe mode..."
 sudo pkill mysqld
 sleep 2  # Wait a moment to ensure MySQL has stopped
+
+# Remove skip-networking if not required
+sudo sed -i '/^skip-networking/d' "$MY_CNF"
 
 # Restart MySQL normally
 echo "Restarting MySQL normally..."
