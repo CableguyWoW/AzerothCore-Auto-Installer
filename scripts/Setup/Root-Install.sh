@@ -78,6 +78,7 @@ cd /AzerothCore-Auto-Installer/scripts/Setup/
 fi
 
 
+
 ((NUM++))
 if [ "$1" = "all" ] || [ "$1" = "$NUM" ]; then
 echo ""
@@ -86,20 +87,103 @@ echo "## $NUM. Install MySQL Server"
 echo "##########################################################"
 echo ""
 
+MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
+
+# Function to check if MySQL is running
+check_mysql_running() 
+{
+    systemctl is-active --quiet mysql
+}
+
+# Function to stop MySQL forcefully if needed
+force_stop_mysql() 
+{
+    echo "Attempting to stop MySQL forcefully..."
+    # Get MySQL process IDs and terminate them
+    pids=$(pgrep -u mysql)
+    if [ -n "$pids" ]; then
+        echo "MySQL processes found: $pids"
+        sudo kill -TERM $pids
+        sleep 5  # Wait a moment for termination
+        pids=$(pgrep -u mysql)
+        if [ -n "$pids" ]; then
+            echo "MySQL processes still running. Sending SIGKILL..."
+            sudo kill -KILL $pids
+        fi
+    else
+        echo "No MySQL processes found to kill."
+    fi
+}
+
+# Function to stop MySQL forcefully if needed
+stop_mysql() 
+{
+# Stop MySQL service gracefully
+echo "Stopping MySQL service..."
+sudo service mysql stop
+
+# Wait for MySQL to stop gracefully
+echo "Waiting for MySQL to stop gracefully... Please wait."
+attempts=0
+max_attempts=5
+while check_mysql_running; do
+    if [ $attempts -ge $max_attempts ]; then
+        echo "MySQL did not stop gracefully. Proceeding with forceful termination..."
+        force_stop_mysql
+        break
+    fi
+    echo "Waiting for MySQL to stop... Attempt $((attempts+1)) of $max_attempts"
+    sleep 3
+    attempts=$((attempts + 1))
+done
+
+# Final check to ensure MySQL has stopped
+if check_mysql_running; then
+    echo "ERROR: MySQL is still running despite attempts to stop it. Please check the logs."
+    exit 1
+else
+    echo "MySQL stopped successfully."
+fi
+}
+
+# Function to start MySQL
+start_mysql() 
+{
+# Restart MySQL normally
+echo "Restarting MySQL normally... Please wait."
+sudo service mysql start
+
+echo "Waiting for MySQL to start normally... Please wait."
+attempts=0
+while ! check_mysql_running; do
+    if [ $attempts -ge $max_attempts ]; then
+        echo "MySQL failed to start. Please check the logs."
+        exit 1
+    fi
+    echo "Waiting for MySQL to start... Attempt $((attempts+1)) of $max_attempts"
+    sleep 3
+    attempts=$((attempts + 1))
+done
+echo "MySQL started successfully."
+}
+
+# Function to restart MySQL
+restart_mysql()
+{
+  stop_mysql;
+  start_mysql;
+}
+
+
 # Set root password for MySQL installation
-echo "Setting root password for MySQL installation..."
 echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
 echo "mysql-server mysql-server/root_password_again password $ROOT_PASS" | sudo debconf-set-selections
 
 # Install MySQL server
-echo "Installing MySQL server..."
-sudo apt-get -y install mysql-server
+apt-get -y install mysql-server
 
 # Configure MySQL settings
-MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
-
 # Add skip-networking if not present
-echo "Configuring MySQL settings..."
 if ! grep -q "^skip-networking" "$MY_CNF"; then
     echo "skip-networking" | sudo tee -a "$MY_CNF" > /dev/null
 fi
@@ -114,141 +198,45 @@ if ! grep -q "^sql_mode" "$MY_CNF"; then
     echo 'sql_mode=""' | sudo tee -a "$MY_CNF" > /dev/null
 fi
 
-# Graceful MySQL Restart
-restart_mysql_gracefully() {
-  echo "Restarting MySQL to apply configuration changes... Please wait."
-  sudo service mysql restart
-  attempts=0
-  max_attempts=10
-  while ! check_mysql_running; do
-    if [ $attempts -ge $max_attempts ]; then
-      echo "MySQL did not restart successfully. Please check the logs for errors."
-      exit 1
-    fi
-    echo "Waiting for MySQL to restart... Attempt $((attempts+1)) of $max_attempts"
-    sleep 3
-    attempts=$((attempts + 1))
-  done
-  echo "MySQL restarted successfully."
-}
-
-# Function to check if MySQL is running
-check_mysql_running() {
-  mysqladmin ping --silent
-}
-
-# Start MySQL Gracefully
-start_mysql_gracefully() {
-  echo "Starting MySQL gracefully... Please wait."
-  sudo service mysql start
-  attempts=0
-  max_attempts=10
-  while ! check_mysql_running; do
-    if [ $attempts -ge $max_attempts ]; then
-      echo "MySQL did not start successfully. Please check the logs for errors."
-      exit 1
-    fi
-    echo "Waiting for MySQL to start... Attempt $((attempts+1)) of $max_attempts"
-    sleep 3
-    attempts=$((attempts + 1))
-  done
-  echo "MySQL started successfully."
-}
-
-# Stop MySQL Gracefully
-stop_mysql_gracefully() {
-  echo "Stopping MySQL gracefully... Please wait."
-  sudo service mysql stop
-  attempts=0
-  max_attempts=10
-  while check_mysql_running; do
-    if [ $attempts -ge $max_attempts ]; then
-      echo "MySQL did not stop successfully. Please check the logs for errors."
-      exit 1
-    fi
-    echo "Waiting for MySQL to stop... Attempt $((attempts+1)) of $max_attempts"
-    sleep 3
-    attempts=$((attempts + 1))
-  done
-  echo "MySQL stopped successfully."
-}
-
-# Restart the MySQL service to apply initial changes (with skip-networking)
-echo "Restarting MySQL to apply initial configuration..."
-restart_mysql_gracefully
-
-# Stop MySQL service completely before starting it in safe mode
-stop_mysql_gracefully
+stop_mysql;
 
 # Start MySQL in safe mode (skip-grant-tables) to allow user changes without a password
 echo "Starting MySQL in safe mode to modify user settings... Please wait."
 sudo mysqld_safe --skip-grant-tables --skip-networking &
-sleep 5  # Allow time for MySQL to start
+sleep 5  # Wait for MySQL to start in safe mode
 
-# Function to check if MySQL is running
-check_mysql_running() {
-  mysqladmin ping --silent
-}
-
-# Check if MySQL is started, retry every 3 seconds for up to 30 seconds
-attempts=0
-max_attempts=10
-while ! check_mysql_running; do
-  if [ $attempts -ge $max_attempts ]; then
-    echo "MySQL did not start in time. Please check the logs for errors."
-    exit 1
-  fi
-  echo "Waiting for MySQL to start... Attempt $((attempts+1)) of $max_attempts"
-  sleep 3
-  attempts=$((attempts + 1))
-done
-
-echo "MySQL started successfully."
-
-# Manually update MySQL user settings in the mysql.user table
-echo "Updating MySQL user settings..."
-mysql -u root << EOF
+# Update MySQL root user settings
+echo "Manually updating MySQL root user settings... Please wait."
+mysql -u root <<EOF
 USE mysql;
 
-# Set the root password using mysql_native_password (recommended for compatibility)
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ROOT_PASS';
+UPDATE user 
+SET authentication_string = '$ROOT_PASS', plugin = 'mysql_native_password'
+WHERE user = 'root' AND host = 'localhost';
 
-# Grant all privileges to root user
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
+UPDATE user 
+SET Grant_priv = 'Y', Super_priv = 'Y'
+WHERE user = 'root' AND host = 'localhost';
 
-# Flush privileges to apply changes
 FLUSH PRIVILEGES;
-quit
 EOF
 
-# Stop MySQL safe mode
-echo "Stopping MySQL safe mode... Please wait."
-sudo service mysql stop
+restart_mysql;
 
-# Restart MySQL normally
-start_mysql_gracefully
-
-# Configure bind-address if needed
+# Configure bind-address after restart if needed
 if [ "$REMOTE_DB_SETUP" = "true" ]; then
-    echo "Configuring bind-address for remote access..."
     if ! grep -q "^bind-address" "$MY_CNF"; then
         echo "bind-address = 0.0.0.0" | sudo tee -a "$MY_CNF" > /dev/null
     fi
 fi
 
-# Restart MySQL again after bind-address update
-echo "Restarting MySQL to apply bind-address changes... Please wait."
-restart_mysql_gracefully
+restart_mysql;
 
 # Remove skip-networking if not required
-echo "Removing skip-networking setting from MySQL configuration..."
 sudo sed -i '/^skip-networking/d' "$MY_CNF"
 
-# Optional: Restart MySQL again after user adjustments
-echo "Restarting MySQL after user adjustments... Please wait."
-restart_mysql_gracefully
+restart_mysql;
 
-echo "MySQL server installation and configuration completed successfully."
 fi
 
 
