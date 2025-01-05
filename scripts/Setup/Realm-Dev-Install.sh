@@ -263,8 +263,6 @@ else
 fi
 cd /home/$SETUP_REALM_USER/server/etc/
 if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf" ]; then
-    # Backup old conf
-    mv "worldserver.conf" "worldserver_$(date +%Y%m%d_%H%M%S).conf"
     ## Changing Config values
     echo "Changing Config values"
     ## Misc Edits
