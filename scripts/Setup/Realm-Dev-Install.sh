@@ -177,6 +177,59 @@ fi
 
 
 ((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "modules" ] || [ "$1" = "$NUM" ]; then
+echo ""
+echo "##########################################################"
+echo "## $NUM. Adding Custom AzerothCore Modules"
+echo "##########################################################"
+echo ""
+
+# Directory for modules
+MODULE_DIR="/home/$SETUP_REALM_USER/azerothcore/modules"
+
+# Config directory path
+CONFIG_DIR="/home/$SETUP_REALM_USER/server/etc"
+
+# Ensure module directory exists
+mkdir -p "$MODULE_DIR"
+
+# Iterate through module config options (1 to 100)
+for i in $(seq 1 100); do
+    MODULE_VAR="REALM_MODULE_$i"
+    MODULE_URL="${!MODULE_VAR}"
+
+    # Skip empty or undefined module entries
+    if [ -z "$MODULE_URL" ]; then
+        continue
+    fi
+
+    MODULE_NAME=$(basename "$MODULE_URL" .git)
+
+    echo "Processing module: $MODULE_NAME"
+
+    # Remove the existing module directory if it exists
+    if [ -d "$MODULE_DIR/$MODULE_NAME" ]; then
+        echo "Module $MODULE_NAME already exists. Removing it for reinstallation."
+        rm -rf "$MODULE_DIR/$MODULE_NAME"
+    fi
+
+    # Clone the module from the specified URL
+    echo "Cloning module $MODULE_NAME from $MODULE_URL"
+    git clone "$MODULE_URL" "$MODULE_DIR/$MODULE_NAME"
+
+    # Rename all .dist config files in the global config directory
+    if [ -d "$CONFIG_DIR" ]; then
+        echo "Renaming .dist files in $CONFIG_DIR"
+        find "$CONFIG_DIR" -type f -name "*.dist" -exec bash -c 'mv "$0" "${0%.dist}"' {} \;
+    else
+        echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
+    fi
+done
+fi
+
+
+
+((NUM++))
 if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
 echo ""
 echo "##########################################################"
@@ -209,11 +262,9 @@ echo "## $NUM.Setup Config"
 echo "##########################################################"
 echo ""
 cd /home/$SETUP_REALM_USER/server/etc/
-if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf.dist" ]; then
+if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf" ]; then
     # Backup old conf
     mv "worldserver.conf" "worldserver_$(date +%Y%m%d_%H%M%S).conf"
-    mv worldserver.conf.dist worldserver.conf
-    echo "Moved worldserver.conf.dist to worldserver.conf."
     ## Changing Config values
     echo "Changing Config values"
     ## Misc Edits

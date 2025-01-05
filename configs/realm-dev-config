@@ -22,3 +22,11 @@ SETUP_REALM_PASS="password123"
 REALM_DB_HOST="localhost"
 REALM_DB_USER="dev"
 REALM_DB_PASS="password123"
+
+########## MODULE LIST
+REALM_MODULE_1="https://github.com/azerothcore/mod-anticheat"
+REALM_MODULE_2=""
+REALM_MODULE_3=""
+REALM_MODULE_4=""
+REALM_MODULE_5=""
+REALM_MODULE_6=""
