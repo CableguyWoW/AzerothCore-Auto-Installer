@@ -306,7 +306,7 @@ if [ -f "/home/$SETUP_REALM_USER/server/data/data.zip" ]; then
             mkdir -p /home/$SETUP_REALM_USER//server/data
             cd /home/$SETUP_REALM_USER//server/data
             curl -L -o data.zip $DATA_REPO_URL
-            7z x data.zip
+            7z x -y data.zip
         elif [[ "$file_choice" =~ ^[Nn]$ ]]; then
             echo "Skipping download." && break
         else
@@ -317,7 +317,7 @@ else
     mkdir -p /home/$SETUP_REALM_USER/server/data 
     cd /home/$SETUP_REALM_USER/server/data
     curl -L -o data.zip $DATA_REPO_URL
-    7z x data.zip
+    7z x -y data.zip
 fi
 fi
 
