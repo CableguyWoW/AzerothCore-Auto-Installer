@@ -307,9 +307,9 @@ if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
   echo ""
 
   # Define paths for the base and update SQL files
-  BASE_SQL_PATH="~/azerothcore/sql/base"
-  UPDATES_SQL_PATH="~/azerothcore/sql/updates"
-  CUSTOM_SQL_PATH="~/azerothcore/sql/custom"
+  BASE_SQL_PATH="~/azerothcore/data/sql/base"
+  UPDATES_SQL_PATH="~/azerothcore/data/sql/updates"
+  CUSTOM_SQL_PATH="~/azerothcore/data/sql/custom"
 
   # Function to execute a SQL file if it has not been executed before
   execute_sql_if_not_applied() {
