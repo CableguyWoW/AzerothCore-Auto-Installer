@@ -36,7 +36,7 @@ echo ""
 ((NUM++)); echo "- [$NUM] : Setup MySQL Database & Users"
 ((NUM++)); echo "- [$NUM] : Pull and Setup Source"
 ((NUM++)); echo "- [$NUM] : Setup Worldserver Config"
-((NUM++)); echo "- [$NUM] : Pull and Setup Database"
+((NUM++)); echo "- [$NUM] : Import Database"
 ((NUM++)); echo "- [$NUM] : Download 3.3.5a Client Data"
 ((NUM++)); echo "- [$NUM] : Setup World Restarter Scripts"
 ((NUM++)); echo "- [$NUM] : Setup Misc Scripts"
@@ -287,6 +287,77 @@ else
     echo "Missing config file, exiting..."
     exit 1
 fi
+fi
+
+
+((NUM++))
+if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
+  echo ""
+  echo "##########################################################"
+  echo "## $NUM. Importing Database (World and Characters Only)" 
+  echo "##########################################################"
+  echo ""
+
+  # Define paths for the base and update SQL files
+  BASE_SQL_PATH="~/azerothcore/sql/base"
+  UPDATES_SQL_PATH="~/azerothcore/sql/updates"
+  CUSTOM_SQL_PATH="~/azerothcore/sql/custom"
+
+
+  # Function to execute a SQL file if it has not been executed before
+  execute_sql_if_not_applied() {
+    local sql_file="$1"
+    local db_name="$2"
+    
+    # Check if this SQL file has already been applied
+    result=$(mysql -u "$REALM_DB_USER" -p"$REALM_DB_PASS" -h "$REALM_DB_HOST" -s -N -e "
+      SELECT COUNT(*) FROM ${REALM_DB_USER}_updates WHERE sql_file = '$sql_file';
+    ")
+
+    if [ "$result" -gt 0 ]; then
+      echo "$sql_file has already been applied."
+    else
+      # Execute the SQL file
+      echo "Processing $sql_file..."
+      mysql -u "$REALM_DB_USER" -p"$REALM_DB_PASS" -h "$REALM_DB_HOST" "$db_name" < "$sql_file"
+      if [ $? -ne 0 ]; then
+        echo "Error importing $sql_file. Aborting."
+        exit 1
+      fi
+      # Log the update as applied
+      mysql -u "$REALM_DB_USER" -p"$REALM_DB_PASS" -h "$REALM_DB_HOST" -e "
+        INSERT INTO ${REALM_DB_USER}_updates (sql_file) VALUES ('$sql_file');
+      "
+      echo "$sql_file applied successfully."
+    fi
+  }
+
+  # Run base updates (updates.sql and updates_include.sql)
+  echo "Running base updates (updates.sql and updates_include.sql)..."
+
+  for db_dir in db_characters db_world; do
+    for base_sql_file in "$BASE_SQL_PATH/$db_dir"/*updates*.sql; do
+      execute_sql_if_not_applied "$base_sql_file" "${REALM_DB_USER}_${db_dir}"
+    done
+  done
+
+  # Import update SQL files for characters and world in chronological order
+  echo "Importing update SQL files for characters and world in chronological order..."
+  for db_dir in db_characters db_world; do
+    find "$UPDATES_SQL_PATH/$db_dir" -type f -name "*.sql" | sort | while read -r sql_file; do
+      execute_sql_if_not_applied "$sql_file" "${REALM_DB_USER}_${db_dir}"
+    done
+  done
+
+  # Import custom SQL files for characters and world
+  echo "Importing custom SQL files for characters and world..."
+  for db_dir in db_characters db_world; do
+    for sql_file in "$CUSTOM_SQL_PATH/$db_dir"/*.sql; do
+      execute_sql_if_not_applied "$sql_file" "${REALM_DB_USER}_${db_dir}"
+    done
+  done
+
+  echo "Database import completed successfully."
 fi
 
 
