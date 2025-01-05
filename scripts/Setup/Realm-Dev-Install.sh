@@ -294,7 +294,7 @@ fi
 if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
   echo ""
   echo "##########################################################"
-  echo "## $NUM. Importing Database (World and Characters Only)" 
+  echo "## $NUM. Importing AzerothCore WOTLK Database (World and Characters Only)" 
   echo "##########################################################"
   echo ""
 
@@ -302,7 +302,6 @@ if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
   BASE_SQL_PATH="~/azerothcore/sql/base"
   UPDATES_SQL_PATH="~/azerothcore/sql/updates"
   CUSTOM_SQL_PATH="~/azerothcore/sql/custom"
-
 
   # Function to execute a SQL file if it has not been executed before
   execute_sql_if_not_applied() {
@@ -334,9 +333,12 @@ if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
 
   # Run base updates (updates.sql and updates_include.sql)
   echo "Running base updates (updates.sql and updates_include.sql)..."
-
+  
+  # Use absolute paths for base SQL files
+  BASE_SQL_PATH_EXPANDED=$(eval echo "$BASE_SQL_PATH")
+  
   for db_dir in db_characters db_world; do
-    for base_sql_file in "$BASE_SQL_PATH/$db_dir"/*updates*.sql; do
+    for base_sql_file in "$BASE_SQL_PATH_EXPANDED/$db_dir"/*updates*.sql; do
       execute_sql_if_not_applied "$base_sql_file" "${REALM_DB_USER}_${db_dir}"
     done
   done
