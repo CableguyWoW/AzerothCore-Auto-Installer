@@ -255,14 +255,16 @@ echo "##########################################################"
 echo ""
 CONFIG_DIR="/home/$SETUP_REALM_USER/server/etc"
 # Rename all .dist config files in the global config directory
-if [ -d "$CONFIG_DIR" ]; then
-    echo "Renaming .dist files in $CONFIG_DIR"
-    find "$CONFIG_DIR" -type f -name "*.dist" -exec bash -c 'mv "$0" "${0%.dist}"' {} \;
-else
-    echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
-fi
+#if [ -d "$CONFIG_DIR" ]; then
+#    echo "Renaming .dist files in $CONFIG_DIR"
+#    find "$CONFIG_DIR" -type f -name "*.dist" -exec bash -c 'mv "$0" "${0%.dist}"' {} \;
+#else
+#    echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
+#fi
 cd /home/$SETUP_REALM_USER/server/etc/
-if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf" ]; then
+if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.dist.conf" ]; then
+    # Backup old conf
+    mv "worldserver.dist.conf" "worldserver.conf"
     ## Changing Config values
     echo "Changing Config values"
     ## Misc Edits
