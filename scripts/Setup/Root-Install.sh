@@ -145,6 +145,7 @@ EOF
     echo "Root password updated."
 }
 
+
 ## Script start
 # Set root password for MySQL installation
 echo "mysql-server mysql-server/root_password password $ROOT_PASS" | sudo debconf-set-selections
@@ -188,8 +189,9 @@ fi
 #    exit 1
 #fi
 
+
 # Check MySQL root login
-check_mysql_login
+#check_mysql_login
 
 # Reset the root password
 #reset_mysql_root_password
@@ -198,6 +200,17 @@ check_mysql_login
 #echo "Stopping MySQL safe mode..."
 #sudo pkill mysqld
 #sleep 2  # Wait a moment to ensure MySQL has stopped
+
+# Update MySQL user settings
+mysql -u root -p$ROOT_PASS << EOF
+USE mysql;
+UPDATE user SET user='$ROOT_USER' WHERE user='root';
+ALTER USER '$ROOT_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ROOT_PASS';
+GRANT ALL PRIVILEGES ON *.* TO '$ROOT_USER'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+quit
+EOF
+
 
 # Remove skip-networking if not required
 sudo sed -i '/^skip-networking/d' "$MY_CNF"
