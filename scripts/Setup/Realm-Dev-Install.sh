@@ -262,9 +262,9 @@ CONFIG_DIR="/home/$SETUP_REALM_USER/server/etc"
 #    echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
 #fi
 cd /home/$SETUP_REALM_USER/server/etc/
-if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.dist.conf" ]; then
+if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf.dist" ]; then
     # Backup old conf
-    mv "worldserver.dist.conf" "worldserver.conf"
+    mv "worldserver.conf.dist" "worldserver.conf"
     ## Changing Config values
     echo "Changing Config values"
     ## Misc Edits
