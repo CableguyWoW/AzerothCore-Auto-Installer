@@ -88,6 +88,14 @@ if ! mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT User FROM mysql.user WHERE 
         echo "Failed to create Auth DB user '$AUTH_DB_USER'."
         exit 1
     fi
+    # Update password for existing user
+    echo "Updating password for auth DB user '$AUTH_DB_USER'..."
+    if mysql -u "$ROOT_USER" -p"$ROOT_PASS" -e "ALTER USER '$AUTH_DB_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$AUTH_DB_PASS';"; then
+        echo "Password for auth DB user '$AUTH_DB_USER' updated successfully."
+    else
+        echo "Failed to update password for auth DB user '$AUTH_DB_USER'."
+        exit 1
+    fi
 else
     echo "Auth DB user '$AUTH_DB_USER' already exists."
     
