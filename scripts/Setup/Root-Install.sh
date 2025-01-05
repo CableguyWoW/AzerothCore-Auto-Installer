@@ -179,14 +179,14 @@ if [ "$REMOTE_DB_SETUP" = "true" ]; then
 fi
 
 # Main script
-stop_mysql
-start_mysql_safe
+#stop_mysql
+#start_mysql_safe
 
 # Check if MySQL is running in safe mode
-if ! ps aux | grep -q '[m]ysqld'; then
-    echo "MySQL failed to start in safe mode"
-    exit 1
-fi
+#if ! ps aux | grep -q '[m]ysqld'; then
+#    echo "MySQL failed to start in safe mode"
+#    exit 1
+#fi
 
 # Check MySQL root login
 check_mysql_login
@@ -195,9 +195,9 @@ check_mysql_login
 #reset_mysql_root_password
 
 # Stop the MySQL instance running in safe mode
-echo "Stopping MySQL safe mode..."
-sudo pkill mysqld
-sleep 2  # Wait a moment to ensure MySQL has stopped
+#echo "Stopping MySQL safe mode..."
+#sudo pkill mysqld
+#sleep 2  # Wait a moment to ensure MySQL has stopped
 
 # Remove skip-networking if not required
 sudo sed -i '/^skip-networking/d' "$MY_CNF"
