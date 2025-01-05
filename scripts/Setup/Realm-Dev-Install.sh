@@ -216,14 +216,6 @@ for i in $(seq 1 100); do
     # Clone the module from the specified URL
     echo "Cloning module $MODULE_NAME from $MODULE_URL"
     git clone "$MODULE_URL" "$MODULE_DIR/$MODULE_NAME"
-
-    # Rename all .dist config files in the global config directory
-    if [ -d "$CONFIG_DIR" ]; then
-        echo "Renaming .dist files in $CONFIG_DIR"
-        find "$CONFIG_DIR" -type f -name "*.dist" -exec bash -c 'mv "$0" "${0%.dist}"' {} \;
-    else
-        echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
-    fi
 done
 fi
 
@@ -261,6 +253,14 @@ echo "##########################################################"
 echo "## $NUM.Setup Config"
 echo "##########################################################"
 echo ""
+CONFIG_DIR="/home/$SETUP_REALM_USER/server/etc"
+# Rename all .dist config files in the global config directory
+if [ -d "$CONFIG_DIR" ]; then
+    echo "Renaming .dist files in $CONFIG_DIR"
+    find "$CONFIG_DIR" -type f -name "*.dist" -exec bash -c 'mv "$0" "${0%.dist}"' {} \;
+else
+    echo "Config directory $CONFIG_DIR does not exist. Skipping .dist file renaming."
+fi
 cd /home/$SETUP_REALM_USER/server/etc/
 if [ -f "/home/$SETUP_REALM_USER/server/etc/worldserver.conf" ]; then
     # Backup old conf
