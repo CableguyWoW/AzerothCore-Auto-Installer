@@ -331,15 +331,30 @@ if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
     fi
   }
 
+  # Function to check if the directory exists
+  check_directory_exists() {
+    if [ ! -d "$1" ]; then
+      echo "Directory $1 does not exist. Aborting."
+      exit 1
+    fi
+  }
+
+  # Check if the base directories exist
+  BASE_SQL_PATH_EXPANDED=$(eval echo "$BASE_SQL_PATH")
+  check_directory_exists "$BASE_SQL_PATH_EXPANDED/db_characters"
+  check_directory_exists "$BASE_SQL_PATH_EXPANDED/db_world"
+  check_directory_exists "$UPDATES_SQL_PATH"
+  check_directory_exists "$CUSTOM_SQL_PATH"
+
   # Run base updates (updates.sql and updates_include.sql)
   echo "Running base updates (updates.sql and updates_include.sql)..."
   
-  # Use absolute paths for base SQL files
-  BASE_SQL_PATH_EXPANDED=$(eval echo "$BASE_SQL_PATH")
-  
+  # Run SQL files for db_characters and db_world (with proper database selection)
   for db_dir in db_characters db_world; do
-    for base_sql_file in "$BASE_SQL_PATH_EXPANDED/$db_dir"/*updates*.sql; do
-      execute_sql_if_not_applied "$base_sql_file" "${REALM_DB_USER}_${db_dir}"
+    for sql_file in "$BASE_SQL_PATH_EXPANDED/$db_dir"/*updates*.sql; do
+      if [ -f "$sql_file" ]; then
+        execute_sql_if_not_applied "$sql_file" "${REALM_DB_USER}_${db_dir}"
+      fi
     done
   done
 
@@ -355,7 +370,9 @@ if [ "$1" = "all" ] || [ "$1" = "update" ] || [ "$1" = "$NUM" ]; then
   echo "Importing custom SQL files for characters and world..."
   for db_dir in db_characters db_world; do
     for sql_file in "$CUSTOM_SQL_PATH/$db_dir"/*.sql; do
-      execute_sql_if_not_applied "$sql_file" "${REALM_DB_USER}_${db_dir}"
+      if [ -f "$sql_file" ]; then
+        execute_sql_if_not_applied "$sql_file" "${REALM_DB_USER}_${db_dir}"
+      fi
     done
   done
 
